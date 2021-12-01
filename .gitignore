@@ -1,0 +1,4 @@
+*.csv
+*.pth
+*.pyc
+__init__.py
