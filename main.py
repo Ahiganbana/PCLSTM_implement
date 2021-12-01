@@ -1,27 +1,15 @@
 import os
 import argparse
 import datetime
-from numpy.random.mtrand import shuffle
-
-from torch.random import seed
 import config.config as configurable
 import torch
-from model.model import LSTMModule, PCLSTMModule
+from model.model import PCLSTMModule
 import numpy as np
-import random
-import multiprocessing as mu
 import train_model
 import shutil
 from dataLoader import mydataset
 from torch.utils.data import DataLoader
 
-seed_num = 223
-torch.manual_seed(seed_num)
-random.seed(seed_num)
-torch.manual_seed(seed_num)
-np.random.seed(seed_num)
-random.seed(seed_num)
-torch.cuda.manual_seed(seed_num)
 
 class PCModelArgs:
     def __init__(self, kernel_num, padding_size, input_dim):
@@ -30,6 +18,7 @@ class PCModelArgs:
         self.padding_size = padding_size
         self.dropout = 0.75
         self.cuda = True
+
 
 class LSTMModelArgs:
     def __init__(self, lstm_hidden_dim, lstm_num_layers):
@@ -52,17 +41,15 @@ def load_model():
             args2 = PCModelArgs(36, 1, 36)
             args3 = PCModelArgs(144, 1, 36)
             args4 = PCModelArgs(144, 7, 144)
-            args5 = LSTMModelArgs(129, 5)
-            args6 = LSTMModelArgs(129, 5)
+            args5 = LSTMModelArgs(129, 2)
+            args6 = LSTMModelArgs(129, 2)
             pcargs.append(args1)
             pcargs.append(args2)
             pcargs.append(args3)
             pcargs.append(args4)
             lstmargs.append(args5)
             lstmargs.append(args6)
-            # args7 = LSTMModelArgs(2000, 5)
             model = PCLSTMModule(pcargs, lstmargs)
-            # model = LSTMModule(args7)
     else:
         print('\nLoading model from [%s]...' % config.snapshot)
         try:
@@ -74,23 +61,12 @@ def load_model():
         model = model.cuda()
     return model
 
-def start_train(model, train_iter, dev_iter, test_iter):
-    if config.predict is not None:
-        pass
-    elif config.test:
-        pass
-    else:
-        print('\ncpu_count \n', mu.cpu_count())
-        torch.set_num_threads(config.num_threads)
-        if os.path.exists("./Test_Result.txt"):
-            os.remove("./Test_Result.txt")
-        if config.PCLSTM:
-            print('PCLSTM training start.......')
-            model_count = train_model.train(train_iter, dev_iter, test_iter, model, config)
-        print('Model_count', model_count)
+
+def start_train(model, train_iter, dev_iter):
+    train_model.train(train_iter, dev_iter, model, config)
 
 
-def mrs_five_mui(train_name, dev_name, test_name):
+def mrs_five_mui(train_name, dev_name):
     """
     :function: load five-classification data
     :param path:
@@ -107,21 +83,17 @@ def mrs_five_mui(train_name, dev_name, test_name):
     """
     train_data = mydataset.Mydataset(train_name)
     valid_data = mydataset.Mydataset(dev_name)
-    test_data = mydataset.Mydataset(test_name)
+    # test_data = mydataset.Mydataset(test_name)
     print("len(train_data) {} ".format(len(train_data)))
     print("len(valid_data) {} ".format(len(valid_data)))
-    print("len(test_data) {} ".format(len(test_data)))
-    train_dataloader = DataLoader(dataset=train_data, batch_size = 16, num_workers = 4, shuffle = False)
-    valid_dataloader = DataLoader(dataset=valid_data, batch_size = 16, num_workers = 4, shuffle = False)
-    test_dataloader = DataLoader(dataset=test_data, batch_size = 16, num_workers = 4, shuffle = False)
-    return train_dataloader, valid_dataloader, test_dataloader
+    # print("len(test_data) {} ".format(len(test_data)))
+    # test_dataloader = DataLoader(dataset=test_data, batch_size = 32, num_workers = 4, shuffle = False)
+    return train_data, valid_data
+
 
 def Load_Data():
-    train_iter, dev_iter, test_iter = None, None, None
-    if config.MUTI_CLASS_TASK:
-        print("Executing Muti Classification Task......")
-        train_iter, dev_iter, test_iter = mrs_five_mui(config.name_trainfile, config.name_devfile, config.name_testfile)
-    return train_iter, dev_iter, test_iter
+    train_iter, dev_iter = mrs_five_mui(config.name_trainfile, config.name_devfile)
+    return train_iter, dev_iter
 
 
 def update_arguments():
@@ -137,12 +109,11 @@ def update_arguments():
         os.makedirs(config.save_dir)
 
 
-
 def main():
     update_arguments()
     model = load_model()
-    train_iter, dev_iter, test_iter = Load_Data()
-    start_train(model, train_iter, dev_iter, test_iter)
+    train_iter, dev_iter = Load_Data()
+    start_train(model, train_iter, dev_iter)
 
 
 if __name__ == '__main__':
@@ -155,7 +126,5 @@ if __name__ == '__main__':
     if config.cuda is True:
         print('Using GPU To Train...')
         torch.backends.cudnn.deterministic = True
-        torch.cuda.manual_seed(seed_num)
-        torch.cuda.manual_seed(seed_num)
         print('torch.cuda.initial_seed', torch.cuda.initial_seed())
     main()
