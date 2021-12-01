@@ -28,6 +28,7 @@ def train(train_iter, dev_iter, model, args):
                 feature, target = feature.cuda(), target.cuda()
 
             logit = model(feature)
+            # import pdb;pdb.set_trace()
             optimizer.zero_grad()
             loss = criterion(logit, target)
             _, predicted = torch.max(logit.data, 1)

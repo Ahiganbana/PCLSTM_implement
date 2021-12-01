@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
+from torch.nn.functional import dropout
+import torch.nn.init as init
 
 
 class PCModule(nn.Module):
@@ -28,10 +30,10 @@ class LSTMModule(nn.Module):
     def __init__(self, args):
         super(LSTMModule, self).__init__()
         self.args = args
-        self.hidden_dim = args.lstm_hidden_dim
-        self.num_layers = args.lstm_num_layers
+        hidden_dim = args.lstm_hidden_dim
+        lstm_num_layers = args.lstm_num_layers
         Li = args.input_dim
-        self.lstm = nn.LSTM(Li, self.hidden_dim, num_layers=self.num_layers)
+        self.lstm = nn.LSTM(input_size = Li, hidden_size = hidden_dim, num_layers = lstm_num_layers, batch_first = True)
         # self.dropout = nn.Dropout()
     
     def forward(self, input):
@@ -53,9 +55,9 @@ class PCLSTMModule(nn.Module):
 
         self.full_connect = nn.Linear(129 * 144, 6)
 
-        # print('Initinf W...')
-        # init.xavier_normal(self.lstm.all_weights[0][0], gain=np.sqrt(2))
-        # init.xavier_normal(self.lstm.all_weights[0][1], gain=np.sqrt(2))
+        print('Initinf W...')
+        init.xavier_normal(self.lstmm1.lstm.all_weights[0][0], gain=np.sqrt(2))
+        init.xavier_normal(self.lstmm2.lstm.all_weights[0][1], gain=np.sqrt(2))
     
     def forward(self, inputs):
         pcm1_out = self.pcm1(inputs)
@@ -63,12 +65,15 @@ class PCLSTMModule(nn.Module):
         pcm3_out = self.pcm3(pcm2_out)
         pcm4_out = self.pcm4(pcm3_out)
 
-#         lstmm1_out = self.lstmm1(pcm4_out)
-#         lstmm2_out = self.lstmm2(lstmm1_out)
+        pcm4_out = torch.transpose(pcm4_out, 1, 2).contiguous()
 
-        b, _, _ = pcm4_out.shape
-        pcm4_out = pcm4_out.view(b, -1)
+        lstmm1_out = self.lstmm1(pcm4_out)
+        lstmm2_out = self.lstmm2(lstmm1_out)
+        lstmm2_out = torch.transpose(lstmm2_out, 1, 2).contiguous()
 
-        out = self.full_connect(pcm4_out)
+        b, _, _ = lstmm2_out.shape
+        lstmm2_out = lstmm2_out.view(b, -1)
+
+        out = self.full_connect(lstmm2_out)
         # out = lstmm2_out
         return out

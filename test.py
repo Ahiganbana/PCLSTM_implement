@@ -24,7 +24,7 @@ class LSTMModule(nn.Module):
 
     def __init__(self):
         super(LSTMModule, self).__init__()
-        self.lstm = nn.LSTM(129, 129, 2)
+        self.lstm = nn.LSTM(144, 144, 2)
         self.dropout = nn.Dropout(0.75)
     
     def forward(self, input):
@@ -47,16 +47,21 @@ class PCLSTMModule(nn.Module):
 
         self.full_connect = nn.Linear(129 * 144, 6)
     
-    def forward(self, input):
-        pcm1_out = self.pcm1(input)
+    def forward(self, inputs):
+        pcm1_out = self.pcm1(inputs)
         pcm2_out = self.pcm2(pcm1_out)
         pcm3_out = self.pcm3(pcm2_out)
         pcm4_out = self.pcm4(pcm3_out)
 
-        lstmm1_out = self.lstmm1(pcm4_out)
-        lstmm2_out = self.lstmm2(lstmm1_out)
+        pcm4_out = torch.transpose(pcm4_out, 1, 2).contiguous()
+        print('pcm4_out', pcm4_out.shape)
 
-        print('lstm2.shape:', lstmm2_out.shape)
+        lstmm1_out = self.lstmm1(pcm4_out)
+        print('lstmm1_out', lstmm1_out.shape)
+        lstmm2_out = self.lstmm1(lstmm1_out)
+        lstmm2_out = torch.transpose(lstmm2_out, 1, 2).contiguous()
+        print('lstmm2_out', lstmm2_out.shape)
+
         b, _, _ = lstmm2_out.shape
         lstmm2_out = lstmm2_out.view(b, -1)
 
@@ -64,32 +69,24 @@ class PCLSTMModule(nn.Module):
         # out = lstmm2_out
         return out
 
-fake_data = torch.rand((14, 2000)).unsqueeze(0)
+fake_data = torch.rand((1280, 14, 2000))
 print(type(fake_data))
 model = PCLSTMModule()
 out = model(fake_data)
 print(out.shape)
 
 
-train_data = mydataset.Mydataset(r'D:\Learning\data\211128\normalization\test')
-fake_data = train_data.all_dataset
-fake_data_label = train_data.all_dataset_label
-print(len(fake_data))
-print(type(fake_data[0]))
-print(fake_data_label)
-tensor_data = torch.tensor(fake_data)
-tensor_data_label = torch.tensor(fake_data_label)
-model = PCLSTMModule()
-out = model(tensor_data)
-print(out.shape)
-print(tensor_data.shape)
-print(tensor_data_label.shape)
-loss = F.cross_entropy(out, tensor_data_label.long())
-print(loss)
+# train_data = mydataset.Mydataset(r'D:\Learning\data\211128\normalization\train')
+# fake_data = train_data.all_dataset
+# fake_data_label = train_data.all_dataset_label
 
-# result = np.ones((14, 2000))
-# fake_data = np.ones((14, 2000))
-# fake_data1 = np.ones((14, 2000))
-# # result = np.append(fake_data, fake_data1, axis=1)
-# result = np.append(result, fake_data1, axis=1)
-# print(result.shape)
+# tensor_data = torch.tensor(fake_data)
+# tensor_data_label = torch.tensor(fake_data_label)
+# print(tensor_data.shape)
+# model = PCLSTMModule()
+# out = model(tensor_data)
+# print(out.shape)
+# print(tensor_data.shape)
+# print(tensor_data_label.shape)
+# loss = F.cross_entropy(out, tensor_data_label.long())
+# print(loss)

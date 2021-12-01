@@ -24,7 +24,7 @@ class LSTMModelArgs:
     def __init__(self, lstm_hidden_dim, lstm_num_layers):
         self.lstm_hidden_dim = lstm_hidden_dim
         self.lstm_num_layers = lstm_num_layers
-        self.input_dim = 129
+        self.input_dim = 144
         self.init_weight = True
         self.init_weight_value = 2.0
         self.dropout = 0.75
@@ -41,8 +41,8 @@ def load_model():
             args2 = PCModelArgs(36, 1, 36)
             args3 = PCModelArgs(144, 1, 36)
             args4 = PCModelArgs(144, 7, 144)
-            args5 = LSTMModelArgs(129, 2)
-            args6 = LSTMModelArgs(129, 2)
+            args5 = LSTMModelArgs(144, 1)
+            args6 = LSTMModelArgs(144, 1)
             pcargs.append(args1)
             pcargs.append(args2)
             pcargs.append(args3)
